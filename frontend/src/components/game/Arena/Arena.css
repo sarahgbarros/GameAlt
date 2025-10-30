@@ -1,0 +1,9 @@
+.arena-grid {
+	width: 500px; 
+	height: 500px; 
+	background-color: #fff;
+	border: 1px solid #333;
+	position: relative; 
+	background-image: linear-gradient(to right, #ccc 1px, transparent 1px), linear-gradient(to bottom, #ccc 1px, transparent 1px);
+	background-size: 50px 50px;
+}

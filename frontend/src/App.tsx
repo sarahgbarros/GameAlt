@@ -5,6 +5,7 @@ import AppLayout from './components/AppLayout.tsx';
 import Login from './pages/Login.tsx';
 import PaginaUm from './pages/PaginaUm.tsx';
 import PaginaDois from './pages/PaginaDois.tsx';
+import Teste from './pages/Teste.tsx';
 
 
 function App() {
@@ -16,6 +17,8 @@ function App() {
         return <PaginaUm />;
       case 'pagina2':
         return <PaginaDois />;
+      case 'teste':
+        return <Teste />
       default:
         return <PaginaUm />; 
     }

@@ -49,7 +49,7 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen, setCurrentPage }: SidebarPro
         </button>
         <hr className="border-gray-700" />
         <button
-          onClick={() => navegar('login')}
+          onClick={() => navegar('teste')}
           className="flex items-center gap-3 py-2 px-4 rounded hover:bg-gray-700 text-left"
         >
           <LogOut size={20} />
