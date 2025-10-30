@@ -25,6 +25,10 @@ function App() {
     return <Login setCurrentPage={setCurrentPage} />;
   }
 
+  if (currentPage === "pagina1") {
+    return <PaginaUm />;
+  }
+
   
   return (
     <AppLayout setCurrentPage={setCurrentPage}>
