@@ -8,9 +8,9 @@ export default function Navbar() {
       <h1 className="logo">Detech</h1>
 
       <ul className="menu">
-        <li>Como funciona</li>
-        <li>Sobre nós</li>
-        <li>Contatos</li>
+        <li><a href="#">Como funciona</a></li>
+        <li><a href="#">Sobre nós</a></li>
+        <li><a href="#">Contatos</a></li>
       </ul>
 
       <button className="login">
