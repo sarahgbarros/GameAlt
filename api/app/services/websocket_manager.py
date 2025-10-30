@@ -1,16 +1,26 @@
 from fastapi import WebSocket
+from typing import List
 
-connected_clients = []
+class WebSocketManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
 
-async def handle_connection(websocket: WebSocket):
-    await websocket.accept()
-    connected_clients.append(websocket)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            print(f"Comando recebido via WS: {data}")
-            await websocket.send_text(f"Executando: {data}")
-    except Exception:
-        print("Cliente desconectado")
-    finally:
-        connected_clients.remove(websocket)
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                disconnected.append(connection)
+        
+        for connection in disconnected:
+            self.disconnect(connection)
+
+websocket_manager = WebSocketManager()
