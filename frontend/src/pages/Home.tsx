@@ -1,8 +1,7 @@
-import React from "react";
 import Navbar from "../components/Navbar/Navbar";
 import Roboimg from "../assets/robo.png";
 
-function PaginaUm() {
+function Home() {
   return (
     <div className="bg-[#6C94C4] min-h-screen text-white">
       <Navbar />
@@ -36,4 +35,4 @@ function PaginaUm() {
   );
 }
 
-export default PaginaUm;
+export default Home;

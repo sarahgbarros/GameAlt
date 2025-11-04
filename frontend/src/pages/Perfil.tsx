@@ -1,4 +1,4 @@
-function PaginaDois() {
+function Perfil() {
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-4">Página de Perfil (Conteúdo 2)</h2>
@@ -7,4 +7,4 @@ function PaginaDois() {
   );
 }
 
-export default PaginaDois;
+export default Perfil;

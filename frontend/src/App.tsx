@@ -1,42 +1,24 @@
-import { useState } from 'react';
-
-import AppLayout from './components/AppLayout.tsx';
-
-import Login from './pages/Login.tsx';
-import PaginaUm from './pages/PaginaUm.tsx';
-import PaginaDois from './pages/PaginaDois.tsx';
-
+import { Routes, Route, Navigate } from "react-router-dom";
+import AppLayout from "./components/AppLayout";
+import LoginPage from "./pages/Login";
+import Home from "./pages/Home";
+import Perfil from "./pages/Perfil";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('login'); 
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'pagina1':
-        return <PaginaUm />;
-      case 'pagina2':
-        return <PaginaDois />;
-      default:
-        return <PaginaUm />; 
-    }
-  };
-
-  if (currentPage === 'login') {
-    return <Login setCurrentPage={setCurrentPage} />;
-  }
-
-  if (currentPage === "pagina1") {
-    return <PaginaUm />;
-  }
-
-  
   return (
-    <AppLayout setCurrentPage={setCurrentPage}>
-      {renderPage()}
-    </AppLayout>
+    <Routes>
+      {/* ROTAS PÚBLICAS: */}
+      <Route path="/" element={<LoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* ROTAS PRIVADAS: */}
+      <Route element={<AppLayout />}>
+        <Route path="/home" element={<Home />} />
+        <Route path="/perfil" element={<Perfil />} />
+        <Route path="/home" element={<Navigate to="/home" />} />
+      </Route>
+    </Routes>
   );
 }
 
 export default App;
-
-

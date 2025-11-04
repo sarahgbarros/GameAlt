@@ -1,16 +1,24 @@
 import { Home, LogOut, User, X } from "lucide-react";
+import { Link } from "react-router-dom"; // 1. IMPORTE O <Link>
 
 type SidebarProps = {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
-  setCurrentPage: (page: string) => void;
+  // 2. REMOVIDO 'setCurrentPage'
 };
 
-function Sidebar({ isSidebarOpen, setIsSidebarOpen, setCurrentPage }: SidebarProps) {
+function Sidebar({ isSidebarOpen, setIsSidebarOpen }: SidebarProps) { // 3. REMOVIDO 'setCurrentPage'
   
-  const navegar = (pagina: string) => {
-    setCurrentPage(pagina);
+  // 4. A função 'navegar' não é mais necessária para links simples.
+
+  // 5. Criamos uma função SÓ para o logout
+  const handleLogout = () => {
+    // Limpa a sessão do usuário
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    // Fecha a sidebar
     setIsSidebarOpen(false);
+    // O <Link> fará a navegação
   };
 
   return (
@@ -33,28 +41,37 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen, setCurrentPage }: SidebarPro
       </div>
 
       <nav className="mt-4 p-4 flex flex-col space-y-2">
-        <button
-          onClick={() => navegar('pagina1')}
+        {/* 6. TROCADO <button> por <Link> */}
+        <Link
+          to="/pagina1" // Rota definida no App.tsx
+          onClick={() => setIsSidebarOpen(false)} // Só fecha a sidebar
           className="flex items-center gap-3 py-2 px-4 rounded hover:bg-gray-700 text-left"
         >
           <Home size={20} />
           <span>Início</span>
-        </button>
-        <button
-          onClick={() => navegar('pagina2')}
+        </Link>
+        
+        {/* 7. TROCADO <button> por <Link> */}
+        <Link
+          to="/pagina2" // Rota definida no App.tsx
+          onClick={() => setIsSidebarOpen(false)} // Só fecha a sidebar
           className="flex items-center gap-3 py-2 px-4 rounded hover:bg-gray-700 text-left"
         >
           <User size={20} />
           <span>Perfil</span>
-        </button>
+        </Link>
+        
         <hr className="border-gray-700" />
-        <button
-          onClick={() => navegar('login')}
+        
+        {/* 8. TROCADO <button> por <Link> e usando o handleLogout */}
+        <Link
+          to="/login" // Rota de login
+          onClick={handleLogout} // Limpa a sessão E fecha a sidebar
           className="flex items-center gap-3 py-2 px-4 rounded hover:bg-gray-700 text-left"
         >
           <LogOut size={20} />
-          <span>Sair (Login)</span>
-        </button>
+          <span>Sair</span>
+        </Link>
       </nav>
     </aside>
   );

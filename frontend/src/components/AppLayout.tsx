@@ -1,15 +1,11 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
+import { Outlet } from 'react-router-dom'; 
 import Sidebar from './Sidebar.tsx';
 import Header from './Header.tsx';
 import Overlay from './Overlay.tsx';
 
-// Props que o AppLayout espera receber
-type AppLayoutProps = {
-  children: React.ReactNode;
-  setCurrentPage: (page: string) => void;
-};
 
-function AppLayout({ children, setCurrentPage }: AppLayoutProps) {
+function AppLayout() { 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -18,7 +14,6 @@ function AppLayout({ children, setCurrentPage }: AppLayoutProps) {
       <Sidebar 
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
-        setCurrentPage={setCurrentPage}
       />
       
       <Overlay 
@@ -30,7 +25,7 @@ function AppLayout({ children, setCurrentPage }: AppLayoutProps) {
         <Header setIsSidebarOpen={setIsSidebarOpen} />
         
         <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
@@ -38,4 +33,3 @@ function AppLayout({ children, setCurrentPage }: AppLayoutProps) {
 }
 
 export default AppLayout;
-
