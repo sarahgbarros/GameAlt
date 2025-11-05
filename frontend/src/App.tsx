@@ -1,23 +1,30 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+
+// Componentes e Páginas
 import AppLayout from "./components/AppLayout";
 import LoginPage from "./pages/Login";
+import RegisterPage from "./pages/RegisterPage";
 import Home from "./pages/Home";
 import Perfil from "./pages/Perfil";
+import { ThemeToggle } from "./components/ui/ThemeToggle";
 
 function App() {
   return (
-    <Routes>
-      {/* ROTAS PÚBLICAS: */}
-      <Route path="/" element={<LoginPage />} />
-      <Route path="/login" element={<LoginPage />} />
+    <>
+      <Routes>
+        {/* --- ROTAS PÚBLICAS --- */}
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      {/* ROTAS PRIVADAS: */}
-      <Route element={<AppLayout />}>
-        <Route path="/home" element={<Home />} />
-        <Route path="/perfil" element={<Perfil />} />
-        <Route path="/home" element={<Navigate to="/home" />} />
-      </Route>
-    </Routes>
+        {/* --- ROTAS PRIVADAS (com layout) --- */}
+        <Route element={<AppLayout />}>
+          <Route path="/home" element={<Home />} />
+          <Route path="/perfil" element={<Perfil />} />
+        </Route>
+      </Routes>
+      <ThemeToggle />
+    </>
   );
 }
 

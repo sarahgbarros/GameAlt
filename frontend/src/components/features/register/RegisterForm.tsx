@@ -1,22 +1,34 @@
-import { Link } from "react-router-dom";
-import { useLogin } from "../../../hooks/useLogin";
-import { useTheme } from "../../../contexts/ThemeContext"; // 1. IMPORTAR O useTheme
-import { AtSign, Lock, Loader2, AlertCircle } from "lucide-react"; // 2. IMPORTAR OS ÍCONES
+import { useRegister } from "../../../hooks/useRegister";
+import { useTheme } from "../../../contexts/ThemeContext";
+import { useNavigate } from "react-router-dom";
+import {
+  User,
+  AtSign,
+  Lock,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  ArrowLeft,
+} from "lucide-react";
 
-type LoginFormProps = ReturnType<typeof useLogin>;
+type RegisterFormProps = ReturnType<typeof useRegister>;
 
-export function LoginForm({
+export function RegisterForm({
+  name,
+  setName,
   email,
   setEmail,
   password,
   setPassword,
+  confirmPassword,
+  setConfirmPassword,
   error,
+  successMessage,
   isLoading,
   handleSubmit,
-}: LoginFormProps) {
-  const { theme } = useTheme(); // 3. CHAMAR O HOOK PARA OBTER A VARIÁVEL 'theme'
+}: RegisterFormProps) {
+  const { theme } = useTheme();
 
-  // Classes reutilizáveis para os inputs (para manter o código limpo)
   const inputClassName = `
     w-full pl-10 pr-3 py-2
     border ${theme === "light" ? "border-gray-300" : "border-gray-600"}
@@ -43,7 +55,7 @@ export function LoginForm({
     mt-1.5 text-xs
     ${theme === "light" ? "text-gray-500" : "text-gray-400"}
   `;
-
+  const navigate = useNavigate();
   return (
     <div
       className={`
@@ -55,14 +67,31 @@ export function LoginForm({
       `}
     >
       {/* --- Cabeçalho --- */}
-      <div className="text-center">
+      <div className="text-center relative">
+        <button
+          type="button"
+          onClick={() => navigate("/login")}
+          className={`
+            absolute left-0 top-1/2 -translate-y-1/2 
+            p-2 rounded-full
+            ${
+              theme === "light"
+                ? "text-gray-500 hover:bg-gray-100"
+                : "text-gray-400 hover:bg-gray-700"
+            }
+            transition-colors
+          `}
+          aria-label="Voltar para login"
+        >
+          <ArrowLeft size={20} />
+        </button>
         <h2
           className={`
           text-3xl font-extrabold
           ${theme === "light" ? "text-gray-900" : "text-white"}
         `}
         >
-          Acesse sua conta
+          Crie sua conta
         </h2>
       </div>
 
@@ -92,8 +121,55 @@ export function LoginForm({
         </div>
       )}
 
+      {/* --- Área de Sucesso (Verde) --- */}
+      {successMessage && (
+        <div
+          className={`
+            flex items-center gap-3 p-3 
+            ${
+              theme === "light"
+                ? "bg-green-50 border-green-200"
+                : "bg-green-900/30 border-green-500/30"
+            } 
+            border rounded-lg
+          `}
+        >
+          <CheckCircle className="text-green-500" size={20} />
+          <p
+            className={`
+            text-sm font-medium 
+            ${theme === "light" ? "text-green-600" : "text-green-300"}
+          `}
+          >
+            {successMessage}
+          </p>
+        </div>
+      )}
+
       {/* --- Formulário --- */}
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        {/* --- Campo de Nome --- */}
+        <div>
+          <label htmlFor="name" className={labelClassName}>
+            Nome
+          </label>
+          <div className="relative">
+            <span className={iconSpanClassName}>
+              <User className="h-5 w-5 text-gray-400" />
+            </span>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isLoading}
+              placeholder="Seu nome completo"
+              required
+              className={inputClassName}
+            />
+          </div>
+        </div>
+
         {/* --- Campo de Email --- */}
         <div>
           <label htmlFor="email" className={labelClassName}>
@@ -114,9 +190,6 @@ export function LoginForm({
               className={inputClassName}
             />
           </div>
-          <p className={helperTextClassName}>
-            Use o email cadastrado no sistema.
-          </p>
         </div>
 
         {/* --- Campo de Senha --- */}
@@ -139,33 +212,36 @@ export function LoginForm({
               className={inputClassName}
             />
           </div>
-          <p className={helperTextClassName}>Mínimo de 6 caracteres.</p>
+          <p className={helperTextClassName}>Mínimo de 8 caracteres.</p>
         </div>
 
-        {/* --- Links Extras (Esqueci a senha) --- */}
-        <div className="flex items-center justify-end">
-          <div className="text-sm">
-            <a
-              href="#" // TODO: Mudar para a rota de "esqueci a senha"
-              className={`
-                font-medium
-                ${
-                  theme === "light"
-                    ? "text-blue-600 hover:text-blue-500"
-                    : "text-blue-400 hover:text-blue-300"
-                }
-              `}
-            >
-              Esqueceu a senha?
-            </a>
+        {/* --- Campo de Confirmar Senha --- */}
+        <div>
+          <label htmlFor="confirmPassword" className={labelClassName}>
+            Confirmar Senha
+          </label>
+          <div className="relative">
+            <span className={iconSpanClassName}>
+              <Lock className="h-5 w-5 text-gray-400" />
+            </span>
+            <input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isLoading}
+              placeholder="••••••••"
+              required
+              className={inputClassName}
+            />
           </div>
         </div>
 
         {/* --- Botão de Envio --- */}
-        <div>
+        <div className="pt-2">
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !!successMessage}
             className={`
               w-full flex justify-center py-2.5 px-4
               border border-transparent rounded-md shadow-sm
@@ -183,37 +259,14 @@ export function LoginForm({
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Entrando...
+                Registrando...
               </span>
             ) : (
-              "Entrar"
+              "Criar conta"
             )}
           </button>
         </div>
       </form>
-
-      {/* --- Link para Cadastro --- */}
-      <p
-        className={`
-        text-center text-sm
-        ${theme === "light" ? "text-gray-600" : "text-gray-400"}
-      `}
-      >
-        Não tem uma conta?{" "}
-        <Link
-          to="/register"
-          className={`
-            font-medium
-            ${
-              theme === "light"
-                ? "text-blue-600 hover:text-blue-500"
-                : "text-blue-400 hover:text-blue-300"
-            }
-          `}
-        >
-          Cadastre-se
-        </Link>
-      </p>
     </div>
   );
 }
