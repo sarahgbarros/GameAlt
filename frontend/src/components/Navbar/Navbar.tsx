@@ -1,22 +1,36 @@
-
-import { LogIn } from "lucide-react";
+import { LogIn, Menu } from "lucide-react";
+import { Link } from "react-router-dom";
 import "./index.css";
 
-export default function Navbar() {
+export default function Navbar({ setIsSidebarOpen }) {
   return (
     <nav className="navbar">
+      {/* Menu Hamburguer */}
+      <button className="hamburger" onClick={() => setIsSidebarOpen(true)}>
+        <Menu size={26} color="white" />
+      </button>
+
+      {/* Logo */}
       <h1 className="logo">Detech</h1>
 
+      {/* Menu Desktop */}
       <ul className="menu">
-        <li><a href="#">Como funciona</a></li>
-        <li><a href="#">Sobre nós</a></li>
-        <li><a href="#">Contatos</a></li>
+        <li>
+          <Link to="/como-funciona">Como funciona</Link>
+        </li>
+        <li>
+          <Link to="/sobre">Sobre nós</Link>
+        </li>
+        <li>
+          <Link to="/contato">Contatos</Link>
+        </li>
       </ul>
 
-      <button className="login">
+      {/* Botão Log In -> redireciona para /login */}
+      <Link to="/login" className="login">
         <LogIn size={18} />
         <p>Log in</p>
-      </button>
+      </Link>
     </nav>
   );
 }
