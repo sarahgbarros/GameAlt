@@ -1,3 +1,4 @@
+# gamealt
 # 🟢 GameAlt — Robot Control API
 
 **GameAlt** é uma API backend em **FastAPI** para controlar **robôs Bluetooth/Serial**, incluindo LEGO, via **comandos do Blockly** ou **WebSocket em tempo real**.

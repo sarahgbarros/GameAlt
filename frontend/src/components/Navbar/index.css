@@ -1,0 +1,59 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px;
+  background-color: #4a74b8;
+  color: white;
+  font-family: "Nunito", sans-serif;
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.menu {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0;
+  padding: 0;
+}
+
+.menu li {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.menu li:hover {
+  text-shadow: 2px 2px 6px black;
+  transform: translateY(-2px);
+}
+
+.login {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.login:hover {
+  text-shadow: 2px 2px 6px black;
+  transform: translateY(-2px);
+}
+
+.hamburger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+}
