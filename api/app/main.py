@@ -1,18 +1,12 @@
-<<<<<<< HEAD
-from fastapi import FastAPI, HTTPException, WebSocket
-from pydantic import BaseModel
-from .services.websocket_manager import websocket_manager
 from typing import List
-from .config import settings
-=======
-from fastapi import FastAPI, WebSocket
-from app.routes import robot_routes
-from . import models
-from .database.database import engine
+from pydantic import BaseModel
+from fastapi import FastAPI, WebSocket, HTTPException
+from .database import models
+from .database.database import engine 
+from .services.websocket_manager import websocket_manager
 
-# Criar as tabelas no banco de dados quando a API iniciar
 models.Base.metadata.create_all(bind=engine)
->>>>>>> e6a654b2a5152c49ccb57c3a495bcbe6df9d0060
+
 
 app = FastAPI(title="Robot Control API")
 

@@ -1,0 +1,42 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    container_name: gamealt_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://backend:3001
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - gamealt_net
+
+  backend:
+    build:
+      context: ./api
+      dockerfile: ./app/Dockerfile
+    container_name: gamealt_backend
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./api:/app
+      - sqlite_data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:////app/data/db.sqlite3
+    restart: unless-stopped
+    networks:
+      - gamealt_net
+
+volumes:
+  sqlite_data:
+    name: gamealt_sqlite_data
+
+networks:
+  gamealt_net:
+    driver: bridge
