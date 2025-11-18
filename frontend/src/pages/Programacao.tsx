@@ -62,8 +62,6 @@ export default function Programacao() {
 
 			resizeObserver.observe(blocklyDiv.current);
 
-			// window.addEventListener("resize", () => Blockly.svgResize(workspaceInstance as WorkspaceSvg));
-
 			workspaceRef.current.addChangeListener(() => {
 				if (workspaceRef.current) {
 					const code = javascriptGenerator.workspaceToCode(workspaceRef.current);
@@ -154,10 +152,6 @@ export default function Programacao() {
 	const handleReset = () => {
 		isCancelledRef.current = true;
 		setRobotState({ x: 0, y: 0, dir: 0, isExecuting: false });
-
-		// Não limpamos o workspace visualmente (clear) para o aluno não perder o código,
-		// mas se quiser limpar tudo, descomente a linha abaixo:
-		// if (workspaceRef.current) workspaceRef.current.clear();
 	};
 
 	const handleConnect = () => {

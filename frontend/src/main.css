@@ -88,55 +88,46 @@ html.light #theme-transition-mask {
 }
 
 .blocklySvg {
-	background-color: transparent !important; /* Remove o fundo cinza padrão se houver */
+	background-color: transparent !important; 
 	width: 100% !important;
 	height: 100% !important;
 	border: none !important;
-	display: block; /* Remove gaps estranhos em alguns navegadores */
+	display: block; 
 }
 
-/* Opcional: Deixa a barra de ferramentas (flyout) com visual mais limpo */
 .blocklyToolboxDiv {
-	background-color: #f8f9fa !important; /* Cor cinza claro suave */
+	background-color: #f8f9fa !important; 
 	border-right: 1px solid #e2e8f0 !important;
 }
 
-/* Remove a borda de foco azul padrão do Blockly que fica feia no design moderno */
 .blocklyWidgetDiv {
-	z-index: 99999 !important; /* Garante que dropdowns apareçam acima de modais */
+	z-index: 99999 !important; 
 }
 
-/* --- BLOCKLY THEME OVERRIDES --- */
+/* --- BLOCKLY THEME --- */
 
-/* Fundo da Área de Trabalho (Workspace) */
 .blocklySvg {
-    /* CORRIGIDO: hsl() adicionado */
     background-color: hsl(var(--background)) !important;
 }
 .blocklyMainBackground {
     stroke: none !important; 
 }
 
-/* Fundo da Barra de Ferramentas (Toolbox) */
 .blocklyToolboxDiv {
-    /* CORRIGIDO: hsl() adicionado */
     background-color: hsl(var(--secondary)) !important;
     border-right: 1px solid hsl(var(--border)) !important;
     color: hsl(var(--foreground)) !important;
 }
 
-/* Textos na Toolbox */
 .blocklyTreeLabel {
     color: hsl(var(--foreground)) !important;
     font-family: inherit !important;
 }
 
-/* Hover nas categorias */
 .blocklyTreeRow:hover {
     background-color: hsl(var(--accent)) !important;
 }
 
-/* Seleção na Toolbox */
 .blocklyTreeRow.blocklyTreeSelected {
     background-color: hsl(var(--primary)) !important;
 }
@@ -144,28 +135,27 @@ html.light #theme-transition-mask {
     color: hsl(var(--primary-foreground)) !important;
 }
 
-/* Menu Flyout */
 .blocklyFlyoutBackground {
     fill: hsl(var(--card)) !important;
     fill-opacity: 1 !important;
     stroke: hsl(var(--border)) !important;
 }
 
-/* Scrollbars */
 .blocklyScrollbarHandle {
     fill: hsl(var(--muted-foreground)) !important;
     fill-opacity: 0.5 !important;
 }
 
-/* Menus */
 .blocklyWidgetDiv .goog-menu {
     background: hsl(var(--popover)) !important;
     border-color: hsl(var(--border)) !important;
     color: hsl(var(--popover-foreground)) !important;
 }
+
 .blocklyWidgetDiv .goog-menuitem-content {
     color: hsl(var(--popover-foreground)) !important;
 }
+
 .blocklyWidgetDiv .goog-menuitem-highlight,
 .blocklyWidgetDiv .goog-menuitem-hover {
     background-color: hsl(var(--accent)) !important;
