@@ -1,18 +1,22 @@
-import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, RotateCcw, /*Power*/ Zap, MousePointer } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { Play, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
+import "blockly/blocks";
 import * as Blockly from "blockly/core";
 import { WorkspaceSvg } from "blockly/core";
-import { javascriptGenerator } from "blockly/javascript";
-import "blockly/blocks";
 import "blockly/javascript";
+import { javascriptGenerator } from "blockly/javascript";
 import "../blockly/customBlocks";
 import { toolbox } from "../blockly/toolbox";
 import Arena from "../components/Game/Arena/Arena";
+import axios from "axios"
+
+const API_URL = "http://localhost:8000/api/robot"; // Atenção: porta 8000 se rodar local, 8001 se for docker
+const WS_URL = "ws://localhost:8000/api/robot/ws";
 
 interface RobotState {
 	x: number;
@@ -23,11 +27,11 @@ interface RobotState {
 
 export default function Programacao() {
 	const [connectionStatus, setConnectionStatus] = useState("disconnected");
-	const [webhookUrl /*setWebhookUrl*/] = useState("ws://192.168.1.100:8080");
 	const blocklyDiv = useRef<HTMLDivElement>(null);
 	const workspaceRef = useRef<WorkspaceSvg | null>(null);
 	const isCancelledRef = useRef<boolean>(false);
 	const [generatedCode, setGeneratedCode] = useState<string>("");
+	const wsRef = useRef<WebSocket | null>(null);
 
 	const [robotState, setRobotState] = useState<RobotState>({
 		x: 0,
@@ -80,6 +84,45 @@ export default function Programacao() {
 		};
 	}, []);
 
+	useEffect(() => {
+		const checkInitial = async () => {
+			try {
+				const res = await axios.get(`${API_URL}/status`);
+				if (res.data.connected) {
+					setConnectionStatus("connected");
+					connectWebSocket();
+				}
+			} catch (e) { setConnectionStatus("disconnected"); }
+		};
+		checkInitial();
+
+		// Cleanup ao sair da página
+		return () => {
+			if (wsRef.current) wsRef.current.close();
+		};
+	}, []);
+
+	const connectWebSocket = () => {
+		if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
+
+		const ws = new WebSocket(WS_URL);
+		wsRef.current = ws;
+
+		ws.onopen = () => console.log("🟢 WS Conectado sob demanda");
+
+		ws.onmessage = (event) => {
+			try {
+				const data = JSON.parse(event.data);
+				if (data.type === "status" && data.connected === false) {
+					setConnectionStatus("disconnected");
+					ws.close();
+				}
+			} catch (e) { console.error(e); }
+		};
+
+		ws.onerror = (e) => console.error("🔴 Erro WS", e);
+	};
+
 	const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 	const handleExecute = async (): Promise<void> => {
@@ -93,6 +136,22 @@ export default function Programacao() {
 			.filter((cmd) => cmd.trim() !== "");
 
 		console.log("Comandos processados:", commands);
+
+		const apiCommands: string[] = [];
+
+		commands.forEach(cmd => {
+			if (cmd.includes("mover_frente")) {
+				const valor = parseInt(cmd.match(/\d+/)?.[0] || "1");
+				for (let i = 0; i < valor; i++) apiCommands.push("andar");
+			}
+			else if (cmd.includes("virar_direita")) apiCommands.push("virar_direita");
+			else if (cmd.includes("virar_esquerda")) apiCommands.push("virar_esquerda");
+		});
+
+		if (connectionStatus === "connected") {
+			axios.post(`${API_URL}/execute`, { commands: apiCommands })
+				.catch(err => console.error("Erro ao enviar comandos:", err));
+		}
 
 		for (const command of commands) {
 			if (isCancelledRef.current) {
@@ -154,22 +213,62 @@ export default function Programacao() {
 		setRobotState({ x: 0, y: 0, dir: 0, isExecuting: false });
 	};
 
-	const handleConnect = () => {
-		if (connectionStatus === "connected") {
+	const handleConnect = async () => {
+		try {
+			if (connectionStatus === "connected") {
+				setConnectionStatus("disconnected"); 
+				if (wsRef.current) wsRef.current.close(); 
+				await axios.post(`${API_URL}/disconnect`);
+			} else {
+				setConnectionStatus("connecting");
+
+				await axios.post(`${API_URL}/connect`);
+
+				setConnectionStatus("connected");
+				connectWebSocket(); // 
+			}
+		} catch (error) {
+			console.error("Erro de conexão:", error);
 			setConnectionStatus("disconnected");
-		} else {
-			setConnectionStatus("connecting");
-			setTimeout(() => setConnectionStatus("connected"), 1500);
+			alert("Erro ao conectar. Verifique se o Backend está rodando.");
 		}
 	};
 
 	const statusColor = cn("h-3 w-3 rounded-full", connectionStatus === "connected" && "bg-green-500 animate-pulse", connectionStatus === "connecting" && "bg-yellow-500 animate-spin", connectionStatus === "disconnected" && "bg-destructive");
 
-	const manualMove = (action: string) => {
-		// Aqui você pode implementar uma lógica simples de movimento unitário
-		// para os botões de debug, reutilizando a lógica do switch acima se desejar.
-		console.log("Movimento manual:", action);
-	};
+	const manualMove = async (action: string) => {
+        console.log("Manual:", action);
+        
+        if (connectionStatus === "connected") {
+            try {
+                await axios.post(`${API_URL}/execute`, { commands: [action] });
+            } catch (e) { console.error(e); }
+        }
+
+        setRobotState((currentState) => {
+            const logicalDir = ((currentState.dir % 360) + 360) % 360;
+            let { x, y } = currentState;
+
+            if (action === "andar") {
+                if (logicalDir === 0) y -= 1;      // Cima
+                if (logicalDir === 90) x += 1;     // Direita
+                if (logicalDir === 180) y += 1;    // Baixo
+                if (logicalDir === 270) x -= 1;    // Esquerda
+            } 
+            else if (action === "virar_direita") {
+                return { ...currentState, dir: currentState.dir + 90 };
+            } 
+            else if (action === "virar_esquerda") {
+                return { ...currentState, dir: currentState.dir - 90 };
+            }
+
+            return { 
+                ...currentState, 
+                x: Math.max(0, Math.min(9, x)), 
+                y: Math.max(0, Math.min(9, y)) 
+            };
+        });
+    };
 
 	return (
 		<div className="flex flex-col h-full overflow-hidden">
@@ -189,7 +288,6 @@ export default function Programacao() {
 					</div>
 
 					<div className="flex items-center gap-3">
-						<span className="text-sm font-medium text-muted-foreground hidden md:block">{webhookUrl}</span>
 						<Button size="sm" onClick={handleConnect} variant={connectionStatus === "connected" ? "destructive" : "default"} disabled={connectionStatus === "connecting"}>
 							<span className={statusColor} />
 							{connectionStatus === "connected" ? "Desconectar Robô" : connectionStatus === "connecting" ? "Conectando..." : "Conectar Robô"}
@@ -222,12 +320,15 @@ export default function Programacao() {
 						<div className="p-4 border-t">
 							<CardTitle className="text-sm mb-2">Controle Manual (Debug)</CardTitle>
 							<div className="grid grid-cols-3 gap-2">
-								<Button variant="outline" className="col-span-3">
+								<Button variant="outline" className="col-start-1 row-start-2" onClick={() => manualMove("virar_esquerda")}>
+									Esquerda
+								</Button>
+								<Button variant="outline" className="col-start-2 row-start-2" onClick={() => manualMove("andar")}>
 									Frente
 								</Button>
-								<Button variant="outline">Esquerda</Button>
-								<Button variant="outline">Parar</Button>
-								<Button variant="outline">Direita</Button>
+								<Button variant="outline" className="col-start-3 row-start-2" onClick={() => manualMove("virar_direita")}>
+									Direita
+								</Button>
 							</div>
 						</div>
 					</CardContent>
