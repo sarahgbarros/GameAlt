@@ -2,6 +2,16 @@ import os
 from .bluetooth_service import BluetoothConnection
 from .websocket_manager import websocket_manager
 from ..utils.command_parser import parse_command
+import asyncio
+
+SETUP_SCRIPT = """
+import hub
+from spike import MotorPair
+# Configura motores nas portas A e B
+motor_pair = MotorPair('A', 'B') 
+motor_pair.set_default_speed(50)
+print("Robo Pronto")
+"""
 
 class RobotService:
     def __init__(self, bluetooth=None, websocket_manager_instance=None):
@@ -14,6 +24,12 @@ class RobotService:
     async def connect(self) -> bool:
         try:
             self.connected = await self.bluetooth.connect()
+
+            if self.connected: 
+                for line in SETUP_SCRIPT.split('\n'):
+                    if line:
+                        await self.bluetooth.send(line + "\r\n")
+                        await asyncio.sleep(0.1)
             
             if self.websocket_manager:
                 await self.websocket_manager.broadcast(f'{{"type": "status", "connected": {str(self.connected).lower()}}}')
