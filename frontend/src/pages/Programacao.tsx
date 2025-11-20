@@ -15,7 +15,7 @@ import { toolbox } from "../blockly/toolbox";
 import Arena from "../components/Game/Arena/Arena";
 import axios from "axios"
 
-const API_URL = "http://localhost:8000/api/robot"; // Atenção: porta 8000 se rodar local, 8001 se for docker
+const API_URL = "http://localhost:8000/api/robot";
 const WS_URL = "ws://localhost:8000/api/robot/ws";
 
 interface RobotState {
