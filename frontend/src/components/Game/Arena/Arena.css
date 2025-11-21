@@ -1,0 +1,13 @@
+.arena-grid {
+  width: 100%;
+  aspect-ratio: 1 / 1; 
+  
+  background-color: hsl(var(--background)); 
+  border: 2px solid hsl(var(--border));
+  position: relative;
+  
+  background-image: 
+      linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
+  background-size: 10% 10%; 
+}

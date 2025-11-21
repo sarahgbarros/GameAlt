@@ -1,5 +1,7 @@
 import serial
-import time
+import asyncio 
+
+MOCK_MODE = True
 
 class BluetoothConnection:
     def __init__(self, port="/dev/rfcomm0", baudrate=9600, timeout=1):
@@ -8,21 +10,35 @@ class BluetoothConnection:
         self.timeout = timeout
         self.connection = None
 
-    def connect(self):
+    async def connect(self):
+        if MOCK_MODE:
+            print(f"🔒 [MOCK] Conectado simulado na porta {self.port}")
+            await asyncio.sleep(0.5) 
+            return True 
+
         try:
             self.connection = serial.Serial(self.port, self.baudrate, timeout=self.timeout)
-            time.sleep(2)
+            await asyncio.sleep(2) 
             return True
         except Exception as e:
             print("Erro ao conectar:", e)
             return False
 
-    def send(self, command: str):
+    async def send(self, command: str):
+        if MOCK_MODE:
+            print(f"🚀 [MOCK] Enviando comando para o robô: {command}")
+            await asyncio.sleep(0.2) 
+            return True
+
         if self.connection and self.connection.is_open:
             self.connection.write(command.encode())
             return True
         return False
 
-    def disconnect(self):
+    async def disconnect(self):
+        if MOCK_MODE:
+            print("🔌 [MOCK] Desconectado simulado")
+            return
+
         if self.connection:
             self.connection.close()

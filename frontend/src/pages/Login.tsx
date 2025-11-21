@@ -1,21 +1,19 @@
-type PaginaLoginProps = {
-  setCurrentPage: (page: string) => void;
-};
+import { useLogin } from "@/hooks/useLogin";
+import { LoginForm } from "@/components/features/login/LoginForm";
 
-function Login({ setCurrentPage }: PaginaLoginProps) {
+export default function LoginPage() {
+  const loginLogic = useLogin();
+
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-200">
-      <div className="p-10 bg-white rounded-lg shadow-xl text-center">
-        <h2 className="text-2xl font-bold mb-6">Login ETECH</h2>
-        <button
-          onClick={() => setCurrentPage('pagina1')}
-          className="w-full px-4 py-2 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-        >
-          Simular Login (Ir para Página 1)
-        </button>
-      </div>
-    </div>
+    <>
+      <title>Login | ETECH</title>
+      <meta
+        name="description"
+        content="Faça login na plataforma ETECH para acessar seus projetos."
+      />
+      <main className="flex items-center justify-center min-h-screen p-4">
+        <LoginForm {...loginLogic} />
+      </main>
+    </>
   );
 }
-
-export default Login;

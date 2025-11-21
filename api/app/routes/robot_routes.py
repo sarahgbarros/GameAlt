@@ -2,10 +2,11 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from typing import List
 from pydantic import BaseModel
 from ..services.robot_service import robot_service
+from ..utils.command_parser import COMMAND_MAP
 
 router = APIRouter()
 
-VALID_COMMANDS = {"forward", "backward", "left", "right"}
+VALID_COMMANDS = set(COMMAND_MAP.keys())
 
 class CommandRequest(BaseModel):
     commands: List[str]
@@ -14,7 +15,7 @@ class CommandRequest(BaseModel):
 async def connect_robot():
     """Conecta ao robô via Bluetooth"""
     try:
-        success = robot_service.connect()
+        success = await robot_service.connect()
         if success:
             return {"status": "connected", "message": "Robot connected successfully"}
         else:
@@ -53,7 +54,7 @@ async def execute_commands(request: CommandRequest):
 async def disconnect_robot():
     """Desconecta do robô"""
     try:
-        success = robot_service.disconnect()
+        success = await robot_service.disconnect()
         if success:
             return {"status": "disconnected", "message": "Robot disconnected successfully"}
         else:

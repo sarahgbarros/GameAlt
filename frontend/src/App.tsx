@@ -1,38 +1,39 @@
-import { useState } from 'react';
-
-import AppLayout from './components/AppLayout.tsx';
-
-import Login from './pages/Login.tsx';
-import PaginaUm from './pages/PaginaUm.tsx';
-import PaginaDois from './pages/PaginaDois.tsx';
-
+import { Routes, Route } from "react-router-dom";
+import ComoFunciona from "./pages/ComoFunciona";
+import Sobre from "./pages/Sobre";
+import Contato from "./pages/Contato";
+import LoginPage from "./pages/Login";
+import RegisterPage from "./pages/RegisterPage";
+import Home from "./pages/Home";
+import Perfil from "./pages/Perfil";
+import Programacao from "./pages/Programacao"; // Importa a nova página
+import { MagicThemeSwitcher } from "./components/ui/MagicThemeSwitcher";
+import AppLayout from "./components/AppLayout";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('login'); 
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'pagina1':
-        return <PaginaUm />;
-      case 'pagina2':
-        return <PaginaDois />;
-      default:
-        return <PaginaUm />; 
-    }
-  };
-
-  if (currentPage === 'login') {
-    return <Login setCurrentPage={setCurrentPage} />;
-  }
-
-  
   return (
-    <AppLayout setCurrentPage={setCurrentPage}>
-      {renderPage()}
-    </AppLayout>
+    <>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/perfil" element={<Perfil />} />
+          <Route path="/programacao" element={<Programacao />} />{" "}
+          {/* Nova Rota */}
+          <Route path="/como-funciona" element={<ComoFunciona />} />
+          <Route path="/sobre" element={<Sobre />} />
+          <Route path="/contato" element={<Contato />} />
+        </Route>
+      </Routes>
+
+      <div className="fixed bottom-4 right-4 z-50">
+        <MagicThemeSwitcher />
+      </div>
+    </>
   );
 }
 
 export default App;
-
-
