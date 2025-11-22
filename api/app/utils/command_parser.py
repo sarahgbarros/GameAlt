@@ -1,12 +1,15 @@
 COMMAND_MAP = {
-    "andar": "F",
-    "virar_esquerda": "L",
-    "virar_direita": "R",
-    "parar": "S"
+    "andar": "motor_pair.move(10, 'cm')", 
+    "virar_esquerda": "motor_pair.move_tank(180, -180, 'degrees')",
+    "virar_direita": "motor_pair.move_tank(-180, 180, 'degrees')",
+    "parar": "motor_pair.stop()"
 }
 
 def parse_command(blockly_command: str) -> str:
-    return COMMAND_MAP.get(blockly_command)
+    cmd = COMMAND_MAP.get(blockly_command)
+    if cmd:
+        return cmd + "\r\n" 
+    return None
 
 def parse_command_list(commands: list[str]) -> list[str]:
     parsed = []

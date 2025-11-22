@@ -27,16 +27,6 @@
 
 ## 🛠 Instalação
 
-1. Clone o repositório:
+Existem instruções de instalação em cada um das partes do projeto (front e back)
 
-```bash
-git clone <seu_repositorio_url>
-cd backend
-
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-
-pip install -r requirements.txt
+Ou simplesmente, rode o compose (SE O AMBIENTE DE TESTE NÂO FOR WINDOWS)
