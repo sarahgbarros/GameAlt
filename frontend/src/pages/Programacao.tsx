@@ -16,7 +16,8 @@ import Arena from "../components/Game/Arena/Arena";
 import axios from "axios"
 
 const API_URL = "http://localhost:8000/api/robot";
-const WS_URL = "ws://localhost:8000/api/robot/ws";
+const WS_URL  = "ws://localhost:8000/api/robot/ws";
+
 
 interface RobotState {
 	x: number;
@@ -214,25 +215,37 @@ export default function Programacao() {
 	};
 
 	const handleConnect = async () => {
-		try {
-			if (connectionStatus === "connected") {
-				setConnectionStatus("disconnected"); 
-				if (wsRef.current) wsRef.current.close(); 
-				await axios.post(`${API_URL}/disconnect`);
-			} else {
-				setConnectionStatus("connecting");
+    try {
+        if (connectionStatus === "connected") {
+            
+            setConnectionStatus("disconnected"); 
+            if (wsRef.current) wsRef.current.close(); 
+            await axios.post(`${API_URL}/disconnect`);
+        } else {
+            setConnectionStatus("connecting");
+			
+            const discoverRes = await axios.get(`${API_URL}/discover`);
+            const mac = discoverRes.data.mac;
 
-				await axios.post(`${API_URL}/connect`);
+            if (!mac) {
+                alert("Nenhum robô encontrado por BLE.");
+                setConnectionStatus("disconnected");
+                return;
+            }
 
-				setConnectionStatus("connected");
-				connectWebSocket(); // 
-			}
-		} catch (error) {
-			console.error("Erro de conexão:", error);
-			setConnectionStatus("disconnected");
-			alert("Erro ao conectar. Verifique se o Backend está rodando.");
-		}
-	};
+            await axios.post(`${API_URL}/connect`, { mac });
+
+            setConnectionStatus("connected");
+            connectWebSocket();
+        }
+    } catch (error) {
+        console.error("Erro de conexão:", error);
+        setConnectionStatus("disconnected");
+        alert("Erro ao conectar. Verifique se o Backend está rodando.");
+    }
+};
+
+
 
 	const statusColor = cn("h-3 w-3 rounded-full", connectionStatus === "connected" && "bg-green-500 animate-pulse", connectionStatus === "connecting" && "bg-yellow-500 animate-spin", connectionStatus === "disconnected" && "bg-destructive");
 

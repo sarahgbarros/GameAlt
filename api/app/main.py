@@ -16,7 +16,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(robot_routes.router, prefix="/api/robot", tags=["Robot Control"])
+app.include_router(robot_routes.router, prefix="/api/robot")
+
 
 @app.get("/")
 def root():
