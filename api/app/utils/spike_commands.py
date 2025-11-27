@@ -30,19 +30,16 @@ def create_command_map():
         # ===== COMANDOS PRINCIPAIS =====
         
         "andar": SpikeCommands.repl_command(
-            "import motor;from hub import port;motor.run(port.A,800);motor.run(port.C,800);__import__('time').sleep(1);motor.stop(port.A);motor.stop(port.C)"
+            "import motor;from hub import port;motor.run(port.D,800);motor.run(port.C,800);import('time').sleep(1);motor.stop(port.D);motor.stop(port.C)"
         ),
-        
         "virar_direita": SpikeCommands.repl_command(
-            "import motor;from hub import port;motor.run(port.A,600);motor.run(port.C,-600);__import__('time').sleep(0.5);motor.stop(port.A);motor.stop(port.C)"
+            "import motor;from hub import port;motor.run(port.D,600);motor.run(port.C,-600);import('time').sleep(0.5);motor.stop(port.D);motor.stop(port.C)"
         ),
-        
         "virar_esquerda": SpikeCommands.repl_command(
-            "import motor;from hub import port;motor.run(port.A,-600);motor.run(port.C,600);__import__('time').sleep(0.5);motor.stop(port.A);motor.stop(port.C)"
+            "import motor;from hub import port;motor.run(port.D,-600);motor.run(port.C,600);import('time').sleep(0.5);motor.stop(port.D);motor.stop(port.C)"
         ),
-        
         "parar": SpikeCommands.repl_command(
-            "import motor;from hub import port;motor.stop(port.A);motor.stop(port.C)"
+            "import motor;from hub import port;motor.stop(port.D);motor.stop(port.C)"
         ),
         
         # ===== TESTE =====

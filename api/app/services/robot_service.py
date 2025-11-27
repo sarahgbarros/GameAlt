@@ -4,6 +4,7 @@ from typing import List, Optional, Set
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from ..utils.spike_commands import COMMAND_MAP
 
 # Suas importações
 from .spike_driver import SpikeBLEConnection
@@ -152,27 +153,39 @@ class RobotService:
         except Exception as e:
             log.error(f"Erro ao desconectar: {e}")
 
+
+
     async def execute_commands(self, commands: List[str]) -> List[str]:
-        """Executa lista de comandos Python no Spike"""
+        """
+        Executa lista de comandos no Spike, mapeando as chaves legíveis (ex: "andar")
+        para o código Python MicroPython completo.
+        """
         if not self.connected:
             log.error("Robô não conectado")
             return ["ERROR: Robot not connected"]
 
         results = []
         
-        for cmd in commands:
+        # O loop agora itera sobre as chaves (ex: "andar") enviadas pelo front-end
+        for key_cmd in commands:
+            
+            
+            cmd = COMMAND_MAP.get(key_cmd, key_cmd)
+            
             try:
-                log.info(f"📤 Executando: {cmd[:50]}...")
+                log.info(f"📤 Executando: {key_cmd} ({cmd[:50].strip()}...)")
                 
                 if self.websocket_manager:
+                    # Transmite o comando *original* para feedback no front-end
                     await self.websocket_manager.broadcast({
                         "type": "executing",
-                        "command": cmd
+                        "command": key_cmd
                     })
                 
                 self._response_buffer = ""
                 
-                # Envia comando via BLE
+                # Envia o comando MicroPython completo (que foi obtido do mapa) via BLE
+                # O repl_command já deve ter adicionado o '\r\n'
                 await self.spike.send(cmd.encode("utf-8"))
                 await asyncio.sleep(0.05)
                 await self.spike.send(b'\x04')  # Ctrl-D para executar
@@ -187,15 +200,15 @@ class RobotService:
                 log.info(f"✅ Resultado: {result}")
                 
             except Exception as e:
-                log.error(f"Erro ao executar {cmd}: {e}")
+                log.error(f"Erro ao executar {key_cmd}: {e}")
                 results.append(f"ERROR: {str(e)}")
                 
                 if self.websocket_manager:
                     await self.websocket_manager.broadcast({
                         "type": "error",
-                        "message": f"❌ Erro: {str(e)}"
+                        "message": f"❌ Erro ao executar {key_cmd}: {str(e)}"
                     })
-        
+            
         return results
 
     async def send_raw_python(self, code: str) -> List[str]:
