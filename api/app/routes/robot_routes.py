@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
-from ..services.robot_service import robot_service
+from ..services.robot_service import robot_service 
 from ..utils.spike_commands import COMMAND_MAP
 
 router = APIRouter(prefix="")
@@ -14,7 +14,7 @@ class CommandRequest(BaseModel):
 
 
 class ConnectRequest(BaseModel):
-    mac: str
+    mac: Optional[str] = None 
 
 
 class PythonCodeRequest(BaseModel):
@@ -24,26 +24,23 @@ class PythonCodeRequest(BaseModel):
 @router.get("/discover")
 async def discover():
     """Descobre dispositivos Spike Prime próximos"""
-    return await robot_service.discover()
+    return await robot_service.discover()  
 
 
 @router.post("/connect")
 async def connect_robot(req: ConnectRequest):
     """Conecta ao Spike Prime via BLE"""
-    if not req.mac:
-        raise HTTPException(400, "MAC address obrigatório")
-
-    ok = await robot_service.connect(req.mac)
+    ok = await robot_service.connect(req.mac) 
     if not ok:
         raise HTTPException(500, "Falha ao conectar")
 
-    return {"status": "connected", "mac": req.mac}
+    return {"status": "connected", "mac": robot_service.spike.mac}
 
 
 @router.post("/disconnect")
 async def disconnect_robot():
     """Desconecta do Spike Prime"""
-    await robot_service.disconnect()
+    await robot_service.disconnect() 
     return {"status": "disconnected"}
 
 
@@ -57,10 +54,10 @@ async def execute(request: CommandRequest):
         "commands": ["forward", "beep", "left", "stop"]
     }
     """
-    if not robot_service.connected:
+    if not robot_service.connected: 
         raise HTTPException(400, "Robot not connected")
 
-    responses = await robot_service.execute_commands(request.commands)
+    responses = await robot_service.execute_commands(request.commands) 
     
     return {
         "status": "success",
@@ -79,10 +76,10 @@ async def execute_python(request: PythonCodeRequest):
         "code": "from hub import sound\\nsound.beep(440, 500)"
     }
     """
-    if not robot_service.connected:
+    if not robot_service.connected:  # ← usa instância
         raise HTTPException(400, "Robot not connected")
 
-    responses = await robot_service.send_raw_python(request.code)
+    responses = await robot_service.send_raw_python(request.code) 
     
     return {
         "status": "success",
@@ -93,7 +90,7 @@ async def execute_python(request: PythonCodeRequest):
 @router.get("/status")
 async def status():
     """Retorna o status da conexão e comandos disponíveis"""
-    return robot_service.get_status()
+    return robot_service.get_status()  
 
 
 @router.get("/commands")
@@ -104,23 +101,6 @@ async def list_commands():
         "total": len(VALID_COMMANDS)
     }
 
-
-@router.post("/test")
-async def test_connection():
-    """
-    Testa a conexão enviando um beep simples.
-    Use este endpoint após conectar para verificar se está funcionando.
-    """
-    if not robot_service.connected:
-        raise HTTPException(400, "Robot not connected")
-
-    responses = await robot_service.execute_commands(["test"])
-    
-    return {
-        "status": "test_sent",
-        "message": "Se você ouviu um beep e viu um smile no display, está funcionando!",
-        "responses": responses
-    }
 
 
 # ===== WEBSOCKET =====
@@ -134,6 +114,7 @@ async def websocket_endpoint(websocket: WebSocket):
     WebSocket para controle em tempo real do robô.
     
     Envie comandos como texto simples: "forward", "left", "stop", etc.
+    Ou envie JSON: {"type": "discover"}, {"type": "connect", "mac": "..."}
     """
     await websocket.accept()
     connected_clients.append(websocket)
@@ -146,8 +127,71 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            data = await websocket.receive_text()
-            cmd = data.strip().lower()
+            # Recebe texto ou JSON
+            try:
+                data = await websocket.receive_json()
+                
+                # Se vier como JSON, processa comandos especiais
+                if isinstance(data, dict):
+                    cmd_type = data.get("type", "").lower()
+                    
+                    if cmd_type == "discover":
+                        result = await robot_service.discover()
+                        await websocket.send_json({
+                            "type": "discover_result",
+                            "data": result
+                        })
+                        continue
+                    
+                    elif cmd_type == "connect":
+                        mac = data.get("mac")
+                        success = await robot_service.connect(mac)
+                        await websocket.send_json({
+                            "type": "connect_result",
+                            "success": success,
+                            "mac": robot_service.spike.mac if success else None
+                        })
+                        continue
+                    
+                    elif cmd_type == "disconnect":
+                        await robot_service.disconnect()
+                        await websocket.send_json({
+                            "type": "disconnected",
+                            "message": "Robot disconnected"
+                        })
+                        continue
+                    
+                    elif cmd_type == "execute":
+                        code = data.get("code", "")
+                        if not robot_service.connected:
+                            await websocket.send_json({
+                                "type": "error",
+                                "message": "Robot not connected"
+                            })
+                            continue
+                        
+                        results = await robot_service.send_raw_python(code)
+                        await websocket.send_json({
+                            "type": "execute_result",
+                            "results": results
+                        })
+                        continue
+                    
+                    elif cmd_type == "status":
+                        status = robot_service.get_status()
+                        await websocket.send_json({
+                            "type": "status_result",
+                            "data": status
+                        })
+                        continue
+                    
+                    # Se não reconheceu o tipo, tenta como comando
+                    cmd = cmd_type
+                
+            except:
+                # Se não for JSON, tenta como texto simples
+                data = await websocket.receive_text()
+                cmd = data.strip().lower()
 
             # Verifica se está conectado ao robô
             if not robot_service.connected:
@@ -162,7 +206,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({
                     "type": "error",
                     "message": f"Invalid command: '{cmd}'",
-                    "available_commands": sorted(list(VALID_COMMANDS))[:10]  # Primeiros 10
+                    "available_commands": sorted(list(VALID_COMMANDS))[:10]
                 })
                 continue
 

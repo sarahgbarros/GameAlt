@@ -1,135 +1,249 @@
 import asyncio
 import logging
-from typing import List
-from .lego_web_bridge import LegoWebBridge, LEGO_WEB_COMMAND_MAP
+from typing import List, Optional, Set
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
+# Suas importações
+from .spike_driver import SpikeBLEConnection
+
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("robot-service")
+
+class ConnectRequest(BaseModel):
+    mac: Optional[str] = None
+
+class ExecuteRequest(BaseModel):
+    commands: List[str]
+
+class CodeRequest(BaseModel):
+    code: str
 
 
 class RobotService:
     def __init__(self):
-        self.bridge = LegoWebBridge()
+        self.spike = SpikeBLEConnection()
         self.connected = False
-        self._responses = []
+        self._response_buffer = ""
+        self.websocket_manager = None
 
-    def _on_response(self, data):
-        """Callback para respostas do app LEGO Web"""
-        log.info(f"Resposta do LEGO Web: {data}")
-        self._responses.append(str(data))
+    def set_websocket_manager(self, manager):
+        """Vincula o WebSocket manager para broadcasts"""
+        self.websocket_manager = manager
+
+    def _on_ble_notification(self, data: bytes):
+        """Callback para notificações BLE do Spike"""
+        try:
+            decoded = data.decode("utf-8", errors="ignore")
+            self._response_buffer += decoded
+            log.debug(f"🤖 Spike: {decoded.strip()}")
+            
+            # Broadcast via WebSocket se disponível
+            if self.websocket_manager and decoded.strip():
+                asyncio.create_task(self.websocket_manager.broadcast({
+                    "type": "spike_output",
+                    "data": decoded.strip()
+                }))
+        except Exception as e:
+            log.error(f"Erro no callback BLE: {e}")
 
     async def discover(self):
-        """
-        Descoberta não necessária com LEGO Web Bridge
-        A página já gerencia a conexão com o Spike Prime
-        """
-        return {
-            "found": True,
-            "message": "Use o LEGO Education Spike app ou página web para conectar ao Spike Prime",
-            "instructions": [
-                "1. Abra spike.legoeducation.com",
-                "2. Conecte ao Spike Prime",
-                "3. Abra o Console (F12) e cole o script do backend",
-                "4. Clique em 'Conectar Robô' aqui"
-            ]
-        }
-
-    async def connect(self, mac: str = None) -> bool:
-        """Conecta ao LEGO Web Bridge"""
+        """Descobre dispositivos Spike Prime próximos"""
         try:
-            log.info("Conectando ao LEGO Web Bridge...")
-            success = await self.bridge.connect(callback=self._on_response)
-            if not success:
-                log.error("Falha ao conectar ao LEGO Web Bridge")
-                log.info("💡 Verifique se a página do Spike Prime está aberta e o script foi colado no Console")
-                return False
-
-            self.connected = True
-            log.info("✅ Conectado ao LEGO Web Bridge!")
-            await asyncio.sleep(0.5)  # pequeno delay
-            return True
+            log.info("🔍 Escaneando por Spike Prime...")
+            
+            if self.websocket_manager:
+                await self.websocket_manager.broadcast({
+                    "type": "status",
+                    "message": "🔍 Procurando Spike Prime..."
+                })
+            
+            mac = await self.spike.discover_prime(timeout=10)
+            
+            if not mac:
+                msg = "❌ Nenhum Spike Prime encontrado"
+                log.warning(msg)
+                if self.websocket_manager:
+                    await self.websocket_manager.broadcast({
+                        "type": "error",
+                        "message": msg
+                    })
+                return {"found": False, "mac": None, "message": msg}
+            
+            log.info(f"✅ Spike encontrado: {mac}")
+            if self.websocket_manager:
+                await self.websocket_manager.broadcast({
+                    "type": "discovered",
+                    "mac": mac,
+                    "message": f"✅ Spike encontrado: {mac}"
+                })
+            
+            return {"found": True, "mac": mac, "message": "Spike Prime encontrado"}
+            
         except Exception as e:
-            log.error(f"Erro na conexão: {e}")
+            log.error(f"Erro ao descobrir: {e}")
+            return {"found": False, "mac": None, "error": str(e)}
+
+    async def connect(self, mac: Optional[str] = None) -> bool:
+        """Conecta ao Spike Prime via BLE"""
+        try:
+            log.info("🔗 Iniciando conexão...")
+            
+            if self.websocket_manager:
+                await self.websocket_manager.broadcast({
+                    "type": "status",
+                    "message": "🔗 Conectando ao Spike..."
+                })
+            
+            # Se não passou MAC, descobre automaticamente
+            if not mac:
+                log.info("MAC não fornecido, descobrindo automaticamente...")
+                mac = await self.spike.discover_prime(timeout=10)
+                if not mac:
+                    log.error("Spike não encontrado")
+                    if self.websocket_manager:
+                        await self.websocket_manager.broadcast({
+                            "type": "error",
+                            "message": "❌ Spike não encontrado"
+                        })
+                    return False
+            
+            # Conecta via BLE com callback
+            await self.spike.connect(mac, notify_callback=self._on_ble_notification)
+            
+            self.connected = True
+            log.info("✅ Conectado ao Spike Prime!")
+            
+            if self.websocket_manager:
+                await self.websocket_manager.broadcast({
+                    "type": "connected",
+                    "mac": mac,
+                    "message": "🎉 Spike Prime conectado e pronto!"
+                })
+            
+            return True
+            
+        except Exception as e:
+            log.error(f"❌ Erro ao conectar: {e}")
             self.connected = False
+            
+            if self.websocket_manager:
+                await self.websocket_manager.broadcast({
+                    "type": "error",
+                    "message": f"❌ Erro: {str(e)}"
+                })
+            
             return False
 
     async def disconnect(self):
-        """Desconecta do LEGO Web Bridge"""
+        """Desconecta do Spike Prime"""
         try:
-            await self.bridge.disconnect()
+            await self.spike.disconnect()
             self.connected = False
-            log.info("Desconectado do LEGO Web Bridge")
+            log.info("💤 Desconectado")
+            
+            if self.websocket_manager:
+                await self.websocket_manager.broadcast({
+                    "type": "disconnected",
+                    "message": "🔴 Spike desconectado"
+                })
+                
         except Exception as e:
             log.error(f"Erro ao desconectar: {e}")
 
     async def execute_commands(self, commands: List[str]) -> List[str]:
-        """Executa comandos usando LEGO_WEB_COMMAND_MAP"""
+        """Executa lista de comandos Python no Spike"""
         if not self.connected:
-            log.error("Não conectado ao LEGO Web Bridge")
-            return ["ERROR: Not connected to LEGO Web Bridge"]
+            log.error("Robô não conectado")
+            return ["ERROR: Robot not connected"]
 
-        responses = []
-
+        results = []
+        
         for cmd in commands:
-            python_code = LEGO_WEB_COMMAND_MAP.get(cmd)
-            if not python_code:
-                log.error(f"Comando desconhecido: {cmd}")
-                responses.append(f"ERROR: Unknown command '{cmd}'")
-                continue
-
             try:
-                log.info(f"Executando comando: {cmd}")
-                log.debug(f"Código:\n{python_code}")
-
-                self._responses = []
-                success = await self.bridge.send_python_code(python_code)
-
-                if not success:
-                    responses.append(f"ERROR: Failed to send '{cmd}'")
-                    continue
-
-                await asyncio.sleep(0.5)
-                if self._responses:
-                    responses.extend(self._responses)
-                else:
-                    responses.append(f"Command '{cmd}' sent successfully")
-
-                await asyncio.sleep(0.2)
+                log.info(f"📤 Executando: {cmd[:50]}...")
+                
+                if self.websocket_manager:
+                    await self.websocket_manager.broadcast({
+                        "type": "executing",
+                        "command": cmd
+                    })
+                
+                self._response_buffer = ""
+                
+                # Envia comando via BLE
+                await self.spike.send(cmd.encode("utf-8"))
+                await asyncio.sleep(0.05)
+                await self.spike.send(b'\x04')  # Ctrl-D para executar
+                
+                # Aguarda execução
+                await asyncio.sleep(1.0)
+                
+                response = self._response_buffer.strip()
+                result = response if response else "✓ Executado"
+                results.append(result)
+                
+                log.info(f"✅ Resultado: {result}")
+                
             except Exception as e:
                 log.error(f"Erro ao executar {cmd}: {e}")
-                responses.append(f"ERROR: {str(e)}")
-
-        return responses
+                results.append(f"ERROR: {str(e)}")
+                
+                if self.websocket_manager:
+                    await self.websocket_manager.broadcast({
+                        "type": "error",
+                        "message": f"❌ Erro: {str(e)}"
+                    })
+        
+        return results
 
     async def send_raw_python(self, code: str) -> List[str]:
-        """Envia código Python/JS customizado"""
+        """Envia código Python bruto para o Spike"""
         if not self.connected:
-            return ["ERROR: Not connected to LEGO Web Bridge"]
+            return ["ERROR: Robot not connected"]
 
         try:
-            log.info("Enviando código customizado...")
-            log.debug(f"Código:\n{code}")
-
-            self._responses = []
-            success = await self.bridge.send_python_code(code)
-
-            if not success:
-                return ["ERROR: Failed to send code"]
-
-            await asyncio.sleep(0.5)
-            return self._responses if self._responses else ["Code sent successfully"]
+            log.info(f"📤 Enviando código ({len(code)} chars)...")
+            
+            if self.websocket_manager:
+                await self.websocket_manager.broadcast({
+                    "type": "executing",
+                    "message": "⚙️ Executando código..."
+                })
+            
+            self._response_buffer = ""
+            
+            # Envia código
+            await self.spike.send(code.encode("utf-8"))
+            await asyncio.sleep(0.1)
+            await self.spike.send(b'\x04')
+            
+            # Aguarda execução
+            await asyncio.sleep(1.5)
+            
+            response = self._response_buffer.strip()
+            result = [response if response else "✓ Código executado"]
+            
+            log.info(f"✅ Resultado: {result[0]}")
+            return result
+            
         except Exception as e:
             log.error(f"Erro ao enviar código: {e}")
             return [f"ERROR: {str(e)}"]
 
     def get_status(self):
-        """Retorna status da conexão e comandos disponíveis"""
+        """Retorna status da conexão"""
         return {
             "connected": self.connected,
-            "connection_type": "LEGO Web Bridge",
-            "available_commands": list(LEGO_WEB_COMMAND_MAP.keys()),
-            "note": "A página web do LEGO Education Spike deve estar aberta e o script injetado"
+            "connection_type": "Direct BLE",
+            "mac": self.spike.mac if self.spike else None,
+            "tx_uuid": self.spike.tx_uuid if self.spike else None,
+            "rx_uuid": self.spike.rx_uuid if self.spike else None
         }
 
 
-# Singleton instance
 robot_service = RobotService()
+
+
+__all__ = ['app', 'robot_service', 'manager', 'RobotService', 'ConnectionManager']
