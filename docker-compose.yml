@@ -1,8 +1,10 @@
+version: "3.9"
+
 services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: ./Dockerfile
+      dockerfile: Dockerfile
     container_name: gamealt_frontend
     ports:
       - "3000:3000"
@@ -10,36 +12,28 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - REACT_APP_API_URL=http://localhost:8001
-    depends_on:
-      - backend
+      - REACT_APP_API_URL=http://localhost:8000/robot
     restart: unless-stopped
     networks:
       - gamealt_net
 
-  backend:
-    build:
-      context: ./api
-      dockerfile: ./app/Dockerfile
-    container_name: gamealt_backend
-    privileged: true
-    devices:
-      - "/dev/rfcomm0:/dev/rfcomm0"
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./api:/app
-      - sqlite_data:/app/data
-      - /dev/rfcomm0:/dev/rfcomm0
-    environment:
-      - DATABASE_URL=sqlite:////app/data/db.sqlite3
+  db:
+    image: postgres:15
+    container_name: gamealt_db
     restart: unless-stopped
+    environment:
+      POSTGRES_DB: gamealt
+      POSTGRES_USER: gamealt_user
+      POSTGRES_PASSWORD: superpassword
+    ports:
+      - "5433:5433"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - gamealt_net
 
 volumes:
-  sqlite_data:
-    name: gamealt_sqlite_data
+  postgres_data:
 
 networks:
   gamealt_net:
